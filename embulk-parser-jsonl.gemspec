@@ -5,7 +5,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Shunsuke Mikami"]
   spec.summary       = "Jsonl parser plugin for Embulk"
   spec.description   = "Parses Jsonl files read by other file input plugins."
-  spec.email         = ["mikami@userlocal.jp"]
+  spec.email         = ["shun0102@gmail.com"]
   spec.licenses      = ["MIT"]
   spec.homepage      = "https://github.com/shun0102/embulk-parser-jsonl"
 

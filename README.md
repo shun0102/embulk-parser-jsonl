@@ -5,12 +5,12 @@ TODO: Write short description here and embulk-parser-jsonl.gemspec file.
 ## Overview
 
 * **Plugin type**: parser
-* **Guess supported**: no
+* **Guess supported**: yes
 
 ## Configuration
 
-- **property1**: description (string, required)
-- **property2**: description (integer, default: default-value)
+- **type**: specify this parser as jsonl
+- **schema**: specify column name and type (array, required)
 
 ## Example
 
@@ -19,8 +19,10 @@ in:
   type: any file input plugin type
   parser:
     type: jsonl
-    property1: example1
-    property2: example2
+    schema:
+      - {name: first_name, type: string}
+      - {name: last_name, type: string}
+      - {name: age, type: long}
 ```
 
 (If guess supported) you don't have to write `parser:` section in the configuration file. After writing `in:` section, you can let embulk guess `parser:` section using this command:

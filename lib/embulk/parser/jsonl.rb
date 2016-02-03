@@ -28,12 +28,8 @@ module Embulk
 
         while decoder.nextFile
           while line = decoder.poll
-            begin
-              hash = JSON.parse(line)
-              @page_builder.add(make_record(schema, hash))
-            rescue
-              # TODO: logging
-            end
+            hash = JSON.parse(line)
+            @page_builder.add(make_record(schema, hash))
           end
         end
         page_builder.finish
@@ -53,7 +49,15 @@ module Embulk
           when "double"
             v.to_f
           when "boolean"
-            ["yes", "true", "1"].include?(v.downcase)
+            if v.nil?
+              nil
+            elsif v.kind_of?(String)
+              ["yes", "true", "1"].include?(v.downcase)
+            elsif v.kind_of?(Numeric)
+              !v.zero?
+            else
+              !!v
+            end
           when "timestamp"
             v.empty? ? nil : Time.strptime(v, c["time_format"])
           else

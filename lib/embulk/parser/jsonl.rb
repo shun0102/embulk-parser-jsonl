@@ -53,7 +53,15 @@ module Embulk
           when "double"
             v.to_f
           when "boolean"
-            ["yes", "true", "1"].include?(v.downcase)
+            if v.nil?
+              nil
+            elsif v.kind_of?(String)
+              ["yes", "true", "1"].include?(v.downcase)
+            elsif v.kind_of?(Numeric)
+              !v.zero?
+            else
+              !!v
+            end
           when "timestamp"
             v.empty? ? nil : Time.strptime(v, c["time_format"])
           else

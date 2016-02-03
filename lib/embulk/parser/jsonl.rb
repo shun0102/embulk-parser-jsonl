@@ -28,12 +28,8 @@ module Embulk
 
         while decoder.nextFile
           while line = decoder.poll
-            begin
-              hash = JSON.parse(line)
-              @page_builder.add(make_record(schema, hash))
-            rescue
-              # TODO: logging
-            end
+            hash = JSON.parse(line)
+            @page_builder.add(make_record(schema, hash))
           end
         end
         page_builder.finish

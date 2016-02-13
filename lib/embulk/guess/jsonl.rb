@@ -60,7 +60,7 @@ module Embulk
         end
         guessed = {}
         guessed["type"] = "jsonl"
-        guessed["schema"] = schema
+        guessed["columns"] = schema
         return {"parser" => guessed}
       end
 

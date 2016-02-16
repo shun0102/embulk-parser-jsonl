@@ -53,6 +53,11 @@ public class TestJsonlParserPlugin
     {
         config = config().set("type", "jsonl");
         plugin = new JsonlParserPlugin();
+        recreatePageOutput();
+    }
+
+    private void recreatePageOutput()
+    {
         output = new MockPageOutput();
     }
 
@@ -125,40 +130,48 @@ public class TestJsonlParserPlugin
     }
 
     @Test
-    public void checkNormal()
+    public void useNormal()
             throws Exception
     {
         SchemaConfig schema = schema(
                 column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE),
                 column("_c3", STRING), column("_c4", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S %Z")), column("_c5", JSON));
-        ConfigSource config = this.config.deepCopy().set("columns", schema);
+        List<ConfigSource> configs = Lists.newArrayList(
+                this.config.deepCopy().set("columns", schema),
+                this.config.deepCopy().set("schema", schema)
+        );
 
-        transaction(config, fileInput(
-                "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}}",
-                "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}"
-        ));
+        for (ConfigSource config : configs) {
+            transaction(config, fileInput(
+                    "{\"_c0\":true,\"_c1\":10,\"_c2\":0.1,\"_c3\":\"embulk\",\"_c4\":\"2016-01-01 00:00:00 UTC\",\"_c5\":{\"k\":\"v\"}}",
+                    "[1, 2, 3]",
+                    "{\"_c0\":false,\"_c1\":-10,\"_c2\":1.0,\"_c3\":\"エンバルク\",\"_c4\":\"2016-01-01 00:00:00 +0000\",\"_c5\":[\"e0\",\"e1\"]}"
+            ));
 
-        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
-        assertEquals(2, records.size());
+            List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+            assertEquals(2, records.size());
 
-        Object[] record;
-        {
-            record = records.get(0);
-            assertEquals(true, record[0]);
-            assertEquals(10L, record[1]);
-            assertEquals(0.1, (Double) record[2], 0.0001);
-            assertEquals("embulk", record[3]);
-            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
-            assertEquals(newMap(newString("k"), newString("v")), record[5]);
-        }
-        {
-            record = records.get(1);
-            assertEquals(false, record[0]);
-            assertEquals(-10L, record[1]);
-            assertEquals(1.0, (Double) record[2], 0.0001);
-            assertEquals("エンバルク", record[3]);
-            assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
-            assertEquals(newArray(newString("e0"), newString("e1")), record[5]);
+            Object[] record;
+            {
+                record = records.get(0);
+                assertEquals(true, record[0]);
+                assertEquals(10L, record[1]);
+                assertEquals(0.1, (Double) record[2], 0.0001);
+                assertEquals("embulk", record[3]);
+                assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+                assertEquals(newMap(newString("k"), newString("v")), record[5]);
+            }
+            {
+                record = records.get(1);
+                assertEquals(false, record[0]);
+                assertEquals(-10L, record[1]);
+                assertEquals(1.0, (Double) record[2], 0.0001);
+                assertEquals("エンバルク", record[3]);
+                assertEquals(Timestamp.ofEpochSecond(1451606400L), record[4]);
+                assertEquals(newArray(newString("e0"), newString("e1")), record[5]);
+            }
+
+            recreatePageOutput();
         }
     }
 

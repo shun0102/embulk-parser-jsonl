@@ -1,8 +1,10 @@
 package org.embulk.parser.jsonl;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
+import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
@@ -38,7 +40,13 @@ public class JsonlParserPlugin
             extends Task, LineDecoder.DecoderTask, TimestampParser.Task
     {
         @Config("columns")
-        SchemaConfig getSchemaConfig();
+        @ConfigDefault("null")
+        Optional<SchemaConfig> getSchemaConfig();
+
+        @Config("schema")
+        @ConfigDefault("null")
+        @Deprecated
+        Optional<SchemaConfig> getOldSchemaConfig();
 
         @Config("stop_on_invalid_record")
         @ConfigDefault("false")
@@ -60,7 +68,25 @@ public class JsonlParserPlugin
     public void transaction(ConfigSource configSource, Control control)
     {
         PluginTask task = configSource.loadConfig(PluginTask.class);
-        control.run(task.dump(), task.getSchemaConfig().toSchema());
+        control.run(task.dump(), getSchemaConfig(task).toSchema());
+    }
+
+    // this method is to keep the backward compatibility of 'schema' option.
+    private SchemaConfig getSchemaConfig(PluginTask task)
+    {
+        if (task.getOldSchemaConfig().isPresent()) {
+            log.warn("Please use 'columns' option instead of 'schema' because the 'schema' option is deprecated. The next version will stop 'schema' option support.");
+        }
+
+        if (task.getSchemaConfig().isPresent()) {
+            return task.getSchemaConfig().get();
+        }
+        else if (task.getOldSchemaConfig().isPresent()) {
+            return task.getOldSchemaConfig().get();
+        }
+        else {
+            throw new ConfigException("Attribute 'columns' is required but not set");
+        }
     }
 
     @Override
@@ -70,7 +96,7 @@ public class JsonlParserPlugin
 
         setColumnNameValues(schema);
 
-        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
+        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, getSchemaConfig(task));
         final LineDecoder decoder = newLineDecoder(input, task);
         final JsonParser jsonParser = newJsonParser();
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();

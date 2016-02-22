@@ -10,7 +10,7 @@ TODO: Write short description here and embulk-parser-jsonl.gemspec file.
 ## Configuration
 
 - **type**: specify this parser as jsonl
-- **schema**: specify column name and type (array, required)
+- **columns**: specify column name and type (array, required)
 
 ## Example
 
@@ -19,7 +19,7 @@ in:
   type: any file input plugin type
   parser:
     type: jsonl
-    schema:
+    columns:
       - {name: first_name, type: string}
       - {name: last_name, type: string}
       - {name: age, type: long}
@@ -35,5 +35,5 @@ $ embulk guess -g jsonl config.yml -o guessed.yml
 ## Build
 
 ```
-$ rake
+$ ./gradlew gem classpath
 ```

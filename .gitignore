@@ -2,4 +2,7 @@
 /pkg/
 /tmp/
 /.bundle/
+build/
+/classpath/
+/.gradle
 /Gemfile.lock

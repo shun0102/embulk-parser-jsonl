@@ -6,3 +6,6 @@ build/
 /classpath/
 /.gradle
 /Gemfile.lock
+
+/.idea
+*.iml

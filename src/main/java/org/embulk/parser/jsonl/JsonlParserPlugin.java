@@ -127,7 +127,13 @@ public class JsonlParserPlugin
                                 }
                                 else {
                                     try {
-                                        pageBuilder.setBoolean(column, ((BooleanValue) v).getBoolean());
+                                        boolean value;
+                                        if (v.isStringValue()) {
+                                            value = Boolean.valueOf(v.asStringValue().toString());
+                                        } else {
+                                            value = ((BooleanValue) v).getBoolean();
+                                        }
+                                        pageBuilder.setBoolean(column, value);
                                     }
                                     catch (MessageTypeException e) {
                                         throw new JsonRecordValidateException(e);
@@ -144,7 +150,13 @@ public class JsonlParserPlugin
                                 }
                                 else {
                                     try {
-                                        pageBuilder.setLong(column, ((IntegerValue) v).asLong());
+                                        long value;
+                                        if (v.isStringValue()) {
+                                            value = Long.valueOf(v.asStringValue().toString());
+                                        } else {
+                                            value = ((IntegerValue) v).toLong();
+                                        }
+                                        pageBuilder.setLong(column, value);
                                     }
                                     catch (MessageTypeException e) {
                                         throw new JsonRecordValidateException(e);
@@ -161,7 +173,13 @@ public class JsonlParserPlugin
                                 }
                                 else {
                                     try {
-                                        pageBuilder.setDouble(column, ((FloatValue) v).toDouble());
+                                        double value;
+                                        if (v.isStringValue()) {
+                                            value = Double.valueOf(v.asStringValue().toString());
+                                        } else {
+                                            value = ((FloatValue) v).toDouble();
+                                        }
+                                        pageBuilder.setDouble(column, value);
                                     }
                                     catch (MessageTypeException e) {
                                         throw new JsonRecordValidateException(e);

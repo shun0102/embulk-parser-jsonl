@@ -76,7 +76,8 @@ public class TestJsonlParserPlugin
                 "10",
                 "true",
                 "false",
-                "null"
+                "null",
+                " "
         ));
 
         List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);

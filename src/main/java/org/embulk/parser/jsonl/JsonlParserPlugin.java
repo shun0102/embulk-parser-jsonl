@@ -18,6 +18,7 @@ import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.json.JsonParseException;
 import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.LineDecoder;
@@ -228,7 +229,7 @@ public class JsonlParserPlugin
 
                         pageBuilder.addRecord();
                     }
-                    catch (JsonRecordValidateException e) {
+                    catch (JsonRecordValidateException | JsonParseException e) {
                         if (stopOnInvalidRecord) {
                             throw new DataException(String.format("Invalid record at line %d: %s", lineNumber, line), e);
                         }

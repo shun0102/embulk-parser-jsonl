@@ -1,4 +1,4 @@
-## 0.1.1 - 20XX-XX-XX
+## 0.1.1 - 2016-03-17
 
 [fix bug] Avoid org.embulk.spi.json.JsonParseException: Unable to parse empty string [#5](https://github.com/shun0102/embulk-parser-jsonl/pull/5)
 

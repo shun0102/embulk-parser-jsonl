@@ -3,10 +3,12 @@ package org.embulk.parser.jsonl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.embulk.EmbulkTestRuntime;
+import org.embulk.config.ConfigLoader;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.DataException;
+import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
@@ -21,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -175,9 +178,55 @@ public class TestJsonlParserPlugin
         }
     }
 
+    @Test
+    public void useColumnOptions()
+            throws Exception
+    {
+
+        SchemaConfig schema = schema(
+                column("_c0", BOOLEAN), column("_c1", LONG), column("_c2", DOUBLE));
+        File yamlFile = getResourceFile("use_column_options.yml");
+        ConfigSource config = getConfigFromYamlFile(yamlFile);
+
+        transaction(config, fileInput(
+                "{\"_c0\":\"true\",\"_c1\":\"10\",\"_c2\":\"0.1\"}",
+                "{\"_c0\":\"false\",\"_c1\":\"-10\",\"_c2\":\"1.0\"}"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(true, record[0]);
+            assertEquals(10L, record[1]);
+            assertEquals(0.1, (Double) record[2], 0.0001);
+        }
+        {
+            record = records.get(1);
+            assertEquals(false, record[0]);
+            assertEquals(-10L, record[1]);
+            assertEquals(1.0, (Double) record[2], 0.0001);
+        }
+    }
+
     private ConfigSource config()
     {
         return runtime.getExec().newConfigSource();
+    }
+
+    private File getResourceFile(String resourceName)
+            throws IOException
+    {
+        return new File(this.getClass().getResource(resourceName).getFile());
+    }
+
+    private ConfigSource getConfigFromYamlFile(File yamlFile)
+            throws IOException
+    {
+        ConfigLoader loader = new ConfigLoader(Exec.getModelManager());
+        return loader.fromYamlFile(yamlFile);
     }
 
     private void transaction(ConfigSource config, final FileInput input)

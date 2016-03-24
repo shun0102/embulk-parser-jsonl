@@ -1,0 +1,9 @@
+type: jsonl
+columns:
+  - {name: "_c0", type: "string"}
+  - {name: "_c1", type: "string"}
+  - {name: "_c2", type: "string"}
+column_options:
+  _c0: {type: "boolean"}
+  _c1: {type: "long"}
+  _c2: {type: "double"}

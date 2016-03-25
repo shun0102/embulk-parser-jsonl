@@ -1,0 +1,23 @@
+in:
+  type: file
+  path_prefix: "sample"
+  parser:
+    type: jsonl
+    columns:
+      - {name: "foo", type: "string"}
+      - {name: "bool", type: "boolean"}
+      - {name: "bool_str", type: "string"}
+      - {name: "int", type: "long"}
+      - {name: "int_str", type: "string"}
+      - {name: "time", type: "timestamp", format: '%Y-%m-%d %H:%M:%S'}
+      - {name: "double", type: "double"}
+      - {name: "double_str", type: "string"}
+      - {name: "array", type: "json"}
+    column_options:
+      bool_str: {type: "boolean"}
+      int_str: {type: "long"}
+      double_str: {type: "double"}
+
+
+out:
+  type: stdout

@@ -1,6 +1,8 @@
 package org.embulk.parser.jsonl;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
@@ -8,8 +10,10 @@ import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
+import org.embulk.parser.jsonl.getter.CommonColumnGetter;
+import org.embulk.parser.jsonl.getter.ColumnGetterFactory;
 import org.embulk.spi.Column;
-import org.embulk.spi.ColumnVisitor;
+import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
@@ -23,10 +27,6 @@ import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.LineDecoder;
 import org.embulk.spi.util.Timestamps;
-import org.msgpack.core.MessageTypeException;
-import org.msgpack.value.BooleanValue;
-import org.msgpack.value.FloatValue;
-import org.msgpack.value.IntegerValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
 
@@ -52,6 +52,10 @@ public class JsonlParserPlugin
         @Config("stop_on_invalid_record")
         @ConfigDefault("false")
         boolean getStopOnInvalidRecord();
+
+        @Config("column_options")
+        @ConfigDefault("{}")
+        Map<String, JsonlColumnOption> getColumnOptions();
     }
 
     private final Logger log;
@@ -69,7 +73,14 @@ public class JsonlParserPlugin
     public void transaction(ConfigSource configSource, Control control)
     {
         PluginTask task = configSource.loadConfig(PluginTask.class);
-        control.run(task.dump(), getSchemaConfig(task).toSchema());
+        SchemaConfig schemaConfig = getSchemaConfig(task);
+        ImmutableList.Builder<Column> columns = ImmutableList.builder();
+        for (int i = 0; i < schemaConfig.getColumnCount(); i++) {
+            ColumnConfig columnConfig = schemaConfig.getColumn(i);
+            JsonlColumnOption columnOption = columnOptionOf(task.getColumnOptions(), columnConfig.getName());
+            columns.add(new Column(i, columnConfig.getName(), columnOption.getType().or(columnConfig.getType())));
+        }
+        control.run(task.dump(), new Schema(columns.build()));
     }
 
     // this method is to keep the backward compatibility of 'schema' option.
@@ -97,12 +108,21 @@ public class JsonlParserPlugin
 
         setColumnNameValues(schema);
 
-        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, getSchemaConfig(task));
+        final SchemaConfig schemaConfig = getSchemaConfig(task);
+        final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, schemaConfig);
         final LineDecoder decoder = newLineDecoder(input, task);
         final JsonParser jsonParser = newJsonParser();
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
+            ColumnGetterFactory factory = new ColumnGetterFactory(pageBuilder, timestampParsers);
+            ImmutableMap.Builder<String, CommonColumnGetter> columnGettersBuilder = ImmutableMap.builder();
+            for (ColumnConfig columnConfig : schemaConfig.getColumns()) {
+                CommonColumnGetter columnGetter = factory.newColumnGetter(columnConfig);
+                columnGettersBuilder.put(columnConfig.getName(), columnGetter);
+            }
+            ImmutableMap<String, CommonColumnGetter> columnGetters = columnGettersBuilder.build();
+
             while (decoder.nextFile()) { // TODO this implementation should be improved with new JsonParser API on Embulk v0.8.3
                 lineNumber = 0;
 
@@ -117,115 +137,12 @@ public class JsonlParserPlugin
                         }
 
                         final Map<Value, Value> record = value.asMapValue().map();
-
-                        schema.visitColumns(new ColumnVisitor() {
-                            @Override
-                            public void booleanColumn(Column column)
-                            {
-                                Value v = record.get(getColumnNameValue(column));
-                                if (isNil(v)) {
-                                    pageBuilder.setNull(column);
-                                }
-                                else {
-                                    try {
-                                        pageBuilder.setBoolean(column, ((BooleanValue) v).getBoolean());
-                                    }
-                                    catch (MessageTypeException e) {
-                                        throw new JsonRecordValidateException(e);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void longColumn(Column column)
-                            {
-                                Value v = record.get(getColumnNameValue(column));
-                                if (isNil(v)) {
-                                    pageBuilder.setNull(column);
-                                }
-                                else {
-                                    try {
-                                        pageBuilder.setLong(column, ((IntegerValue) v).asLong());
-                                    }
-                                    catch (MessageTypeException e) {
-                                        throw new JsonRecordValidateException(e);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void doubleColumn(Column column)
-                            {
-                                Value v = record.get(getColumnNameValue(column));
-                                if (isNil(v)) {
-                                    pageBuilder.setNull(column);
-                                }
-                                else {
-                                    try {
-                                        pageBuilder.setDouble(column, ((FloatValue) v).toDouble());
-                                    }
-                                    catch (MessageTypeException e) {
-                                        throw new JsonRecordValidateException(e);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void stringColumn(Column column)
-                            {
-                                Value v = record.get(getColumnNameValue(column));
-                                if (isNil(v)) {
-                                    pageBuilder.setNull(column);
-                                }
-                                else {
-                                    try {
-                                        pageBuilder.setString(column, v.toString());
-                                    }
-                                    catch (MessageTypeException e) {
-                                        throw new JsonRecordValidateException(e);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void timestampColumn(Column column)
-                            {
-                                Value v = record.get(getColumnNameValue(column));
-                                if (isNil(v)) {
-                                    pageBuilder.setNull(column);
-                                }
-                                else {
-                                    try {
-                                        pageBuilder.setTimestamp(column, timestampParsers[column.getIndex()].parse(v.toString()));
-                                    }
-                                    catch (MessageTypeException e) {
-                                        throw new JsonRecordValidateException(e);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void jsonColumn(Column column)
-                            {
-                                Value v = record.get(getColumnNameValue(column));
-                                if (isNil(v)) {
-                                    pageBuilder.setNull(column);
-                                }
-                                else {
-                                    try {
-                                        pageBuilder.setJson(column, v);
-                                    }
-                                    catch (MessageTypeException e) {
-                                        throw new JsonRecordValidateException(e);
-                                    }
-                                }
-                            }
-
-                            private boolean isNil(Value v)
-                            {
-                                return v == null || v.isNilValue();
-                            }
-                        });
+                        for (Column column : schema.getColumns()) {
+                            Value v = record.get(getColumnNameValue(column));
+                            CommonColumnGetter columnGetter = columnGetters.get(column.getName());
+                            columnGetter.setValue(v);
+                            column.visit(columnGetter);
+                        }
 
                         pageBuilder.addRecord();
                     }
@@ -267,17 +184,17 @@ public class JsonlParserPlugin
         return new JsonParser();
     }
 
-    static class JsonRecordValidateException
-            extends DataException
+    private static JsonlColumnOption columnOptionOf(Map<String, JsonlColumnOption> columnOptions, String columnName)
     {
-        JsonRecordValidateException(String message)
-        {
-            super(message);
-        }
-
-        JsonRecordValidateException(Throwable cause)
-        {
-            super(cause);
-        }
+        return Optional.fromNullable(columnOptions.get(columnName)).or(
+                // default column option
+                new Supplier<JsonlColumnOption>()
+                {
+                    public JsonlColumnOption get()
+                    {
+                        return Exec.newConfigSource().loadConfig(JsonlColumnOption.class);
+                    }
+                });
     }
+
 }

@@ -3,16 +3,19 @@ in:
   path_prefix: "example/sample"
   parser:
     type: jsonl
-    # default_typecast: true # default: true
     columns:
       - {name: "foo", type: "string"}
       - {name: "bool", type: "boolean"}
       - {name: "bool_str", type: "boolean"}
-      - {name: "int", type: "long"}
-      - {name: "int_str", type: "long"}
+      - {name: "int", type: "string"}
+      - {name: "int_str", type: "string"}
       - {name: "time", type: "timestamp", format: '%Y-%m-%d %H:%M:%S'}
       - {name: "double", type: "double"}
-      - {name: "double_str", type: "double"}
+      - {name: "double_str", type: "string"}
       - {name: "array", type: "json"}
+    column_options:
+      bool_str: {type: "boolean"}
+      int_str: {type: "long"}
+      double_str: {type: "double"}
 out:
   type: stdout

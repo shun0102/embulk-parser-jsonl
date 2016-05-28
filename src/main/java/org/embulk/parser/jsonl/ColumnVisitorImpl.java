@@ -21,7 +21,6 @@ public class ColumnVisitorImpl implements ColumnVisitor {
     protected final PageBuilder pageBuilder;
     protected final TimestampParser[] timestampParsers;
     protected final Boolean autoTypecasts[];
-    protected final ColumnCaster columnCaster = new ColumnCaster();
 
     protected Value value;
 
@@ -65,7 +64,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
         }
         else {
             try {
-                boolean booleanValue = autoTypecasts[column.getIndex()] ? columnCaster.asBoolean(value) : value.asBooleanValue().getBoolean();
+                boolean booleanValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asBoolean(value) : value.asBooleanValue().getBoolean();
                 pageBuilder.setBoolean(column, booleanValue);
             }
             catch (MessageTypeException e) {
@@ -82,7 +81,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
         }
         else {
             try {
-                long longValue = autoTypecasts[column.getIndex()] ? columnCaster.asLong(value) : value.asIntegerValue().toLong();
+                long longValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asLong(value) : value.asIntegerValue().toLong();
                 pageBuilder.setLong(column, longValue);
             }
             catch (MessageTypeException e) {
@@ -99,7 +98,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
         }
         else {
             try {
-                double doubleValue = autoTypecasts[column.getIndex()] ? columnCaster.asDouble(value) : value.asFloatValue().toDouble();
+                double doubleValue = autoTypecasts[column.getIndex()] ? ColumnCaster.asDouble(value) : value.asFloatValue().toDouble();
                 pageBuilder.setDouble(column, doubleValue);
             }
             catch (MessageTypeException e) {
@@ -116,7 +115,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
         }
         else {
             try {
-                String string = autoTypecasts[column.getIndex()] ? columnCaster.asString(value) : value.asStringValue().toString();
+                String string = autoTypecasts[column.getIndex()] ? ColumnCaster.asString(value) : value.asStringValue().toString();
                 pageBuilder.setString(column, string);
             }
             catch (MessageTypeException e) {
@@ -133,7 +132,7 @@ public class ColumnVisitorImpl implements ColumnVisitor {
         }
         else {
             try {
-                Timestamp timestamp = columnCaster.asTimestamp(value, timestampParsers[column.getIndex()]);
+                Timestamp timestamp = ColumnCaster.asTimestamp(value, timestampParsers[column.getIndex()]);
                 pageBuilder.setTimestamp(column, timestamp);
             }
             catch (MessageTypeException e) {

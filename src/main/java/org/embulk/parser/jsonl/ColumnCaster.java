@@ -5,6 +5,7 @@ import org.embulk.parser.jsonl.cast.DoubleCast;
 import org.embulk.parser.jsonl.cast.JsonCast;
 import org.embulk.parser.jsonl.cast.LongCast;
 import org.embulk.parser.jsonl.cast.StringCast;
+import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParser;
 import org.msgpack.value.Value;
@@ -13,7 +14,7 @@ class ColumnCaster
 {
     ColumnCaster() {}
 
-    public boolean asBoolean(Value value)
+    public static boolean asBoolean(Value value) throws DataException
     {
         if (value.isBooleanValue()) {
             return value.asBooleanValue().getBoolean();
@@ -32,7 +33,7 @@ class ColumnCaster
         }
     }
 
-    public long asLong(Value value)
+    public static long asLong(Value value) throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asLong(value.asBooleanValue().getBoolean());
@@ -51,7 +52,7 @@ class ColumnCaster
         }
     }
 
-    public double asDouble(Value value)
+    public static double asDouble(Value value) throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asDouble(value.asBooleanValue().getBoolean());
@@ -70,12 +71,12 @@ class ColumnCaster
         }
     }
 
-    public String asString(Value value)
+    public static String asString(Value value) throws DataException
     {
         return value.toString();
     }
 
-    public Timestamp asTimestamp(Value value, TimestampParser parser)
+    public static Timestamp asTimestamp(Value value, TimestampParser parser) throws DataException
     {
         if (value.isBooleanValue()) {
             return BooleanCast.asTimestamp(value.asBooleanValue().getBoolean());

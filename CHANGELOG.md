@@ -1,7 +1,11 @@
+## 0.2.0 - 2016-05-28
+
+[new feature] Support typecast option [#9](https://github.com/shun0102/embulk-parser-jsonl/pull/9)
+
 ## 0.1.2 - 2016-03-27
 
 [new feature] Support column_options option [#4](https://github.com/shun0102/embulk-parser-jsonl/pull/4)
-[maintenance] Upgrade Embulk v0.8.8 [#6](https://github.com/shun0102/embulk-parser-jsonl/pull/6)
+[maintenance] Upgrade Embulk v0.8.8 [#6](https://github.com/shun0102/embulk-parser-jsonl/pull/6)## 0.1.2 - 2016-03-27
 
 ## 0.1.1 - 2016-03-17
 

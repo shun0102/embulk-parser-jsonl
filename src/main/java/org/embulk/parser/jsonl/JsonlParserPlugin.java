@@ -10,8 +10,6 @@ import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
-import org.embulk.parser.jsonl.getter.CommonColumnGetter;
-import org.embulk.parser.jsonl.getter.ColumnGetterFactory;
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.DataException;
@@ -25,6 +23,7 @@ import org.embulk.spi.SchemaConfig;
 import org.embulk.spi.json.JsonParseException;
 import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.TimestampParser;
+import org.embulk.spi.type.Type;
 import org.embulk.spi.util.LineDecoder;
 import org.embulk.spi.util.Timestamps;
 import org.msgpack.value.Value;
@@ -37,6 +36,23 @@ import static org.msgpack.value.ValueFactory.newString;
 public class JsonlParserPlugin
         implements ParserPlugin
 {
+    @Deprecated
+    public interface JsonlColumnOption
+            extends Task
+    {
+        @Config("type")
+        @ConfigDefault("null")
+        Optional<Type> getType();
+    }
+
+    public interface TypecastColumnOption
+            extends Task
+    {
+        @Config("typecast")
+        @ConfigDefault("null")
+        public Optional<Boolean> getTypecast();
+    }
+
     public interface PluginTask
             extends Task, LineDecoder.DecoderTask, TimestampParser.Task
     {
@@ -53,8 +69,13 @@ public class JsonlParserPlugin
         @ConfigDefault("false")
         boolean getStopOnInvalidRecord();
 
+        @Config("default_typecast")
+        @ConfigDefault("true")
+        Boolean getDefaultTypecast();
+
         @Config("column_options")
         @ConfigDefault("{}")
+        @Deprecated
         Map<String, JsonlColumnOption> getColumnOptions();
     }
 
@@ -73,14 +94,25 @@ public class JsonlParserPlugin
     public void transaction(ConfigSource configSource, Control control)
     {
         PluginTask task = configSource.loadConfig(PluginTask.class);
+
+        if (! task.getColumnOptions().isEmpty()) {
+            log.warn("embulk-parser-jsonl: \"column_options\" option is deprecated, specify type directly to \"columns\" option with typecast: true (default: true).");
+        }
+
         SchemaConfig schemaConfig = getSchemaConfig(task);
         ImmutableList.Builder<Column> columns = ImmutableList.builder();
         for (int i = 0; i < schemaConfig.getColumnCount(); i++) {
             ColumnConfig columnConfig = schemaConfig.getColumn(i);
-            JsonlColumnOption columnOption = columnOptionOf(task.getColumnOptions(), columnConfig.getName());
-            columns.add(new Column(i, columnConfig.getName(), columnOption.getType().or(columnConfig.getType())));
+            Type type = getType(task, columnConfig);
+            columns.add(new Column(i, columnConfig.getName(), type));
         }
         control.run(task.dump(), new Schema(columns.build()));
+    }
+
+    private static Type getType(PluginTask task, ColumnConfig columnConfig)
+    {
+        JsonlColumnOption columnOption = columnOptionOf(task.getColumnOptions(), columnConfig.getName());
+        return columnOption.getType().or(columnConfig.getType());
     }
 
     // this method is to keep the backward compatibility of 'schema' option.
@@ -115,13 +147,7 @@ public class JsonlParserPlugin
         final boolean stopOnInvalidRecord = task.getStopOnInvalidRecord();
 
         try (final PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output)) {
-            ColumnGetterFactory factory = new ColumnGetterFactory(pageBuilder, timestampParsers);
-            ImmutableMap.Builder<String, CommonColumnGetter> columnGettersBuilder = ImmutableMap.builder();
-            for (ColumnConfig columnConfig : schemaConfig.getColumns()) {
-                CommonColumnGetter columnGetter = factory.newColumnGetter(columnConfig);
-                columnGettersBuilder.put(columnConfig.getName(), columnGetter);
-            }
-            ImmutableMap<String, CommonColumnGetter> columnGetters = columnGettersBuilder.build();
+            ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
             while (decoder.nextFile()) { // TODO this implementation should be improved with new JsonParser API on Embulk v0.8.3
                 lineNumber = 0;
@@ -139,9 +165,8 @@ public class JsonlParserPlugin
                         final Map<Value, Value> record = value.asMapValue().map();
                         for (Column column : schema.getColumns()) {
                             Value v = record.get(getColumnNameValue(column));
-                            CommonColumnGetter columnGetter = columnGetters.get(column.getName());
-                            columnGetter.setValue(v);
-                            column.visit(columnGetter);
+                            visitor.setValue(v);
+                            column.visit(visitor);
                         }
 
                         pageBuilder.addRecord();

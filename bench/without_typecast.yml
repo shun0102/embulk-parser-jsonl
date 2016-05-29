@@ -1,0 +1,17 @@
+in:
+  type: file
+  path_prefix: "bench/sample"
+  parser:
+    type: jsonl
+    default_typecast: false
+    columns:
+      - {name: "foo", type: "string"}
+      - {name: "bool", type: "boolean"}
+      - {name: "bool_str", type: "string"}
+      - {name: "int", type: "long"}
+      - {name: "int_str", type: "string"}
+      - {name: "double", type: "double"}
+      - {name: "double_str", type: "string"}
+      - {name: "array", type: "json"}
+out:
+  type: "null"

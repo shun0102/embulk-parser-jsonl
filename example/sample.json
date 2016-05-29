@@ -1,2 +1,2 @@
-{"foo": "bar", "bool": true, "bool_str": "true", "int": 1, "int_str": "42", "time": "2016-3-2 00:39:18", "double": 1.2, "double_str": "2.4", "array": [1, 2, 3]}
-{"foo": null, "bool": false, "bool_str": "false", "int": 1, "int_str": "42", "time": "2016-3-2 00:39:18", "double": 1.2, "double_str": "2.4", "array": [{"inner": "hoge"}, {"inner": 1.5}]}
+{"foo": "bar", "bool": true, "bool_str": "true", "int": 42, "int_str": "42", "time": "2016-3-2 00:39:18", "double": 2.4, "double_str": "2.4", "array": [1, 2, 3]}
+{"foo": null, "bool": false, "bool_str": "false", "int": 42, "int_str": "42", "time": "2016-3-2 00:39:18", "double": 2.4, "double_str": "2.4", "array": [{"inner": "hoge"}, {"inner": 1.5}]}

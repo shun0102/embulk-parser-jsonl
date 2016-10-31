@@ -31,7 +31,7 @@
 (If guess supported) you don't have to write `parser:` section in the configuration file. After writing `in:` section, you can let embulk guess `parser:` section using this command:
 
 ```
-$ embulk install embulk-parser-jsonl
+$ embulk gem install embulk-parser-jsonl
 $ embulk guess -g jsonl config.yml -o guessed.yml
 ```
 

@@ -17,6 +17,7 @@
 * **newline**: Newline character (CRLF, LF or CR) (string, default: CRLF)
 * **charset**: Character encoding (eg. ISO-8859-1, UTF-8) (string, default: UTF-8)
 * **default_typecast**: Specify whether to cast values automatically to the specified types or not (boolean, default: true)
+* **min_rows_for_guess**: Minimum rows for guess (integer, default: 4)
 
 ### columns
 

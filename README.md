@@ -1,3 +1,12 @@
+# Announcement
+
+From Embulk v0.9.16 (Released on 2019/03/11) has started to support [built-in json parser](https://www.embulk.org/docs/built-in.html).
+
+* The embulk built-in json parser has same behavior for the columns option.
+* The embulk built-in json parser does not support automatic type conversion with the default_typecast option.
+
+For more detail you can visit this [article](https://qiita.com/kamatama_41/items/ebb2ae0548e2a4863397#fn1)
+
 # Jsonl parser plugin for Embulk
 
 [JSONL (JSON Lines)](http://jsonlines.org/) parser plugin for Embulk
